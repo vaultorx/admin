@@ -1,8 +1,10 @@
 import { AdminJSOptions } from 'adminjs';
 
 import { db } from '../db/index.js';
-
-import componentLoader from './component-loader.js';
+import uploadFeature from '@adminjs/upload';
+import {componentLoader} from './component-loader.js';
+import cloudinaryUploadFeature from 'src/features/cloudinary-upload.feature.js';
+import { features } from 'process';
 
 const options: AdminJSOptions = {
   componentLoader,
@@ -44,11 +46,30 @@ const options: AdminJSOptions = {
     },
 
     // NFT & Collection resources
+    // Collections with Cloudinary upload
     {
       resource: db.table('collections'),
       options: {
-        listProperties: ['id', 'name', 'contractAddress', 'creatorId', 'verified', 'floorPrice', 'totalVolume'],
+        listProperties: [
+          'id',
+          'name',
+          'contractAddress',
+          'creatorId',
+          'verified',
+          'floorPrice',
+          'totalVolume',
+          'image',
+        ],
         properties: {
+          image: {
+            type: 'string',
+            isVisible: { list: true, show: true, edit: true, filter: false },
+            components: {
+              show: '@adminjs/upload/components/Show',
+              edit: '@adminjs/upload/components/Edit',
+              list: '@adminjs/upload/components/List',
+            },
+          },
           createdAt: { isVisible: { list: false, show: true, edit: false } },
           updatedAt: { isVisible: { list: false, show: true, edit: false } },
           verified: {
@@ -59,7 +80,23 @@ const options: AdminJSOptions = {
           },
         },
       },
+      features: [
+        cloudinaryUploadFeature({
+          properties: {
+            key: 'image',
+            bucket: 'folder',
+          },
+          validation: {
+            mimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
+          },
+          uploadPath: (record, filename) => {
+            const collectionId = record.params?.id || 'new';
+            return `collections/${collectionId}/${Date.now()}-${filename}`;
+          },
+        }),
+      ],
     },
+
     {
       resource: db.table('nft_items'),
       options: {
@@ -77,6 +114,30 @@ const options: AdminJSOptions = {
           },
         },
       },
+      features: [
+        cloudinaryUploadFeature({
+          properties: {
+            key: 'image',
+            bucket: 'folder',
+          },
+          validation: {
+            mimeTypes: [
+              'image/png',
+              'image/jpeg',
+              'image/gif',
+              'image/webp',
+              'video/mp4',
+              'video/quicktime',
+              'audio/mpeg',
+            ],
+          },
+          uploadPath: (record, filename) => {
+            const nftId = record.params?.id || 'new';
+            const collectionId = record.params?.collectionId || 'unknown';
+            return `nfts/${collectionId}/${nftId}/${Date.now()}-${filename}`;
+          },
+        }),
+      ],
     },
 
     // Transaction resources
@@ -167,6 +228,23 @@ const options: AdminJSOptions = {
           },
         },
       },
+      features: [
+        // Main image upload
+        cloudinaryUploadFeature({
+          properties: {
+            key: 'image',
+            bucket: 'folder',
+          },
+          validation: {
+            mimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
+          },
+          uploadPath: (record, filename) => {
+            const exhibitionId = record.params?.id || 'new';
+            return `exhibitions/${exhibitionId}/main/${Date.now()}-${filename}`;
+          },
+        }),
+        // Banner image upload (you can add another feature for bannerImage)
+      ],
     },
 
     // Financial resources

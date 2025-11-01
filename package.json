@@ -11,15 +11,18 @@
     "dev:ts-node": "dotenv -c '.env' -- ts-node-esm --watch src app.ts"
   },
   "dependencies": {
-    "adminjs": "^7.7.2",
     "@adminjs/express": "^6.1.0",
+    "@adminjs/sql": "^2.2.1",
+    "@adminjs/upload": "^4.0.2",
+    "adminjs": "^7.7.2",
+    "cloudinary": "^2.8.0",
     "express": "^4.18.2",
     "express-formidable": "^1.2.0",
     "express-session": "^1.17.3",
-    "@adminjs/sql": "^2.2.1",
     "pg": "latest"
   },
   "devDependencies": {
+    "@types/express": "^4.17.17",
     "@types/node": "^18.15.11",
     "@typescript-eslint/eslint-plugin": "^5.58.0",
     "@typescript-eslint/parser": "^5.58.0",
@@ -32,9 +35,8 @@
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.1.0",
-    "typescript": "^5.0.4",
-    "@types/express": "^4.17.17",
-    "tslib": "^2.5.0"
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.4"
   },
   "name": "vaultorx-admin"
 }

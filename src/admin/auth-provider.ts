@@ -1,6 +1,6 @@
 import { DefaultAuthProvider } from 'adminjs';
 
-import componentLoader from './component-loader.js';
+import { componentLoader } from './component-loader.js';
 
 // Mock database - replace with your actual database queries
 const users = [

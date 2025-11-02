@@ -17,11 +17,13 @@ module.exports = {
     quotes: ['error', 'single'],
     semi: ['error', 'always'],
     'no-underscore-dangle': 'off',
+    'no-console': 'off',
     'no-shadow': 'off',
     '@typescript-eslint/no-shadow': 'error',
     'import/prefer-default-export': 'off',
     'import/no-unresolved': 'off',
     'import/no-extraneous-dependencies': 'off',
+    'react/function-component-definition':'off',
     'import/extensions': 'off',
     'import/order': [
       'error',

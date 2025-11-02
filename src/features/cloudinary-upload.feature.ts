@@ -1,4 +1,6 @@
-import { buildFeature, FeatureType } from 'adminjs';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { buildFeature, FeatureType, ActionRequest } from 'adminjs';
+
 import { CloudinaryStorage } from '../providers/cloudinary-storage.js';
 
 export type CloudinaryUploadOptions = {
@@ -24,7 +26,7 @@ const cloudinaryUploadFeature = (options: CloudinaryUploadOptions): FeatureType 
         isVisible: {
           list: true,
           show: true,
-          edit: false,
+          edit: true,
           filter: false,
         },
         components: {
@@ -33,10 +35,10 @@ const cloudinaryUploadFeature = (options: CloudinaryUploadOptions): FeatureType 
           list: 'cloudinary-image',
         },
       },
-      [`${properties.key}File`]: {
+      [`${properties.key}Meta`]: {
         type: 'string',
         isVisible: {
-          edit: true,
+          edit: false,
           show: false,
           list: false,
           filter: false,
@@ -45,47 +47,103 @@ const cloudinaryUploadFeature = (options: CloudinaryUploadOptions): FeatureType 
     },
     actions: {
       new: {
-        before: async (request) => {
-          const { payload, method } = request;
-
-          if (payload && payload[`${properties.key}File`]) {
-            const fileData = payload[`${properties.key}File`];
-
-            // In a real implementation, you'd need to handle the file upload
-            // This is a simplified version - you might need to adjust based on how AdminJS handles files
-            console.log('File upload requested:', fileData);
-
-            // For now, we'll simulate the upload process
-            // In production, you'd need to:
-            // 1. Get the actual file buffer from the request
-            // 2. Upload to Cloudinary
-            // 3. Store the URL
-
-            // Remove the temporary file property to avoid validation errors
-            delete payload[`${properties.key}File`];
-          }
-
-          return request;
-        },
+        before: async (request: ActionRequest) =>
+          await handleFileUpload(request, properties.key, validation, uploadPath),
       },
       edit: {
-        before: async (request) => {
-          const { payload } = request;
-
-          if (payload && payload[`${properties.key}File`]) {
-            const fileData = payload[`${properties.key}File`];
-
-            console.log('File upload requested (edit):', fileData);
-
-            // Remove the temporary file property
-            delete payload[`${properties.key}File`];
-          }
-
-          return request;
-        },
+        before: async (request: ActionRequest) =>
+          await handleFileUpload(request, properties.key, validation, uploadPath),
       },
     },
   });
 };
+
+async function handleFileUpload(
+  request: ActionRequest,
+  propertyKey: string,
+  validation?: CloudinaryUploadOptions['validation'],
+  uploadPath?: CloudinaryUploadOptions['uploadPath']
+): Promise<ActionRequest> {
+  const { payload, method } = request;
+
+  if (!payload || !payload[propertyKey]) {
+    return request;
+  }
+
+  const base64Data = payload[propertyKey];
+  const fileMeta = payload[`${propertyKey}Meta`];
+
+  // Check if this is a new file upload (base64 data)
+  if (!base64Data.startsWith('data:')) {
+    // This is already a URL (existing file), don't process it
+    delete payload[`${propertyKey}Meta`];
+    return request;
+  }
+
+  try {
+    // Parse file metadata
+    let filename = 'upload';
+    let mimeType = 'application/octet-stream';
+
+    if (fileMeta) {
+      try {
+        const meta = JSON.parse(fileMeta);
+        filename = meta.name || filename;
+        mimeType = meta.type || mimeType;
+
+        // Validate MIME type if validation is provided
+        if (validation?.mimeTypes && !validation.mimeTypes.includes(mimeType)) {
+          throw new Error(`Invalid file type. Allowed types: ${validation.mimeTypes.join(', ')}`);
+        }
+
+        // Validate file size if validation is provided
+        if (validation?.maxSize && meta.size > validation.maxSize) {
+          throw new Error(`File too large. Maximum size: ${validation.maxSize} bytes`);
+        }
+      } catch (error) {
+        console.error('Error parsing file metadata:', error);
+      }
+    }
+
+    // Extract base64 content (remove data URL prefix)
+    const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) {
+      throw new Error('Invalid base64 data format');
+    }
+
+    const base64Content = matches[2];
+    const fileBuffer = Buffer.from(base64Content, 'base64');
+
+    // Determine upload path
+    let cloudinaryPath = filename;
+    if (uploadPath) {
+      const record = { params: payload };
+      cloudinaryPath = uploadPath(record, filename);
+    }
+
+    // Extract folder from path
+    const pathParts = cloudinaryPath.split('/');
+    const folder = pathParts.slice(0, -1).join('/');
+
+    // Upload to Cloudinary
+    const result = await CloudinaryStorage.upload(fileBuffer, filename, {
+      folder: folder || undefined,
+      allowedFormats: validation?.mimeTypes?.map((mt) => mt.split('/')[1]),
+    });
+
+    // Store the Cloudinary URL
+    payload[propertyKey] = result.secure_url;
+
+    // Clean up metadata field
+    delete payload[`${propertyKey}Meta`];
+
+    console.log(`✅ File uploaded successfully to Cloudinary: ${result.secure_url}`);
+  } catch (error) {
+    console.error('❌ Error uploading file to Cloudinary:', error);
+    throw error;
+  }
+
+  return request;
+}
 
 export default cloudinaryUploadFeature;

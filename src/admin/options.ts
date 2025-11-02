@@ -1,10 +1,10 @@
 import { AdminJSOptions } from 'adminjs';
 
+import cloudinaryUploadFeature from '../features/cloudinary-upload.feature.js';
 import { db } from '../db/index.js';
-import uploadFeature from '@adminjs/upload';
-import {componentLoader} from './component-loader.js';
-import cloudinaryUploadFeature from 'src/features/cloudinary-upload.feature.js';
-import { features } from 'process';
+
+import { componentLoader, Components } from './component-loader.js';
+import { processAttributes } from 'src/utils/helper.js';
 
 const options: AdminJSOptions = {
   componentLoader,
@@ -63,11 +63,16 @@ const options: AdminJSOptions = {
         properties: {
           image: {
             type: 'string',
-            isVisible: { list: true, show: true, edit: true, filter: false },
+            isVisible: {
+              list: true,
+              show: true,
+              edit: true,
+              filter: false,
+            },
             components: {
-              show: '@adminjs/upload/components/Show',
-              edit: '@adminjs/upload/components/Edit',
-              list: '@adminjs/upload/components/List',
+              show: Components.CloudinaryImage, // Use the Components object
+              edit: Components.CloudinaryUpload, // Use the Components object
+              list: Components.CloudinaryImage, // Use the Components object
             },
           },
           createdAt: { isVisible: { list: false, show: true, edit: false } },
@@ -111,6 +116,49 @@ const options: AdminJSOptions = {
               { label: 'Epic', value: 'Epic' },
               { label: 'Legendary', value: 'Legendary' },
             ],
+          },
+          image: {
+            type: 'string',
+            isVisible: {
+              list: true,
+              show: true,
+              edit: true,
+              filter: false,
+            },
+            components: {
+              show: Components.CloudinaryImage, // Use the Components object
+              edit: Components.CloudinaryUpload, // Use the Components object
+              list: Components.CloudinaryImage, // Use the Components object
+            },
+          },
+          attributes: {
+            type: 'mixed',
+            isVisible: {
+              list: false,
+              show: true,
+              edit: true,
+              filter: false,
+            },
+            components: {
+              edit: Components.JsonEditor,
+              show: Components.JsonEditor,
+            },
+          },
+        },
+        actions: {
+          edit: {
+            before: async (request) => {
+              const { payload } = request;
+              await processAttributes(payload);
+              return request;
+            },
+          },
+          new: {
+            before: async (request) => {
+              const { payload } = request;
+              await processAttributes(payload);
+              return request;
+            },
           },
         },
       },
@@ -225,6 +273,20 @@ const options: AdminJSOptions = {
               { label: 'Physical', value: 'physical' },
               { label: 'Hybrid', value: 'hybrid' },
             ],
+          },
+          image: {
+            type: 'string',
+            isVisible: {
+              list: true,
+              show: true,
+              edit: true,
+              filter: false,
+            },
+            components: {
+              show: Components.CloudinaryImage, // Use the Components object
+              edit: Components.CloudinaryUpload, // Use the Components object
+              list: Components.CloudinaryImage, // Use the Components object
+            },
           },
         },
       },

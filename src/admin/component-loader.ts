@@ -2,10 +2,11 @@ import { ComponentLoader } from 'adminjs';
 
 const componentLoader = new ComponentLoader();
 
-// Register your custom components
+// Register your custom components with camelCase naming (no hyphens!)
 const Components = {
-//   CloudinaryUpload: componentLoader.add('cloudinary-upload', '../components/cloudinary-upload'),
-//   CloudinaryImage: componentLoader.add('cloudinary-image', '../components/cloudinary-image'),
+  CloudinaryUpload: componentLoader.add('CloudinaryUpload', './components/cloudinary-upload'),
+  CloudinaryImage: componentLoader.add('CloudinaryImage', './components/cloudinary-image'),
+  JsonEditor: componentLoader.add('JsonEditor', './components/json-editor'),
 };
 
 export { componentLoader, Components };

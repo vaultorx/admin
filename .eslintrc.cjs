@@ -24,6 +24,8 @@ module.exports = {
     'import/no-unresolved': 'off',
     'import/no-extraneous-dependencies': 'off',
     'react/function-component-definition':'off',
+    'no-nested-ternary': 'off',
+    'react/jsx-filename-extension':'off',
     'import/extensions': 'off',
     'import/order': [
       'error',

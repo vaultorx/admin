@@ -1,14 +1,20 @@
 import { AdminJSOptions } from 'adminjs';
+import { processAttributes } from 'src/utils/helper.js';
+import { dashboardHandler } from 'src/utils/dashboard-handler.js';
 
 import cloudinaryUploadFeature from '../features/cloudinary-upload.feature.js';
 import { db } from '../db/index.js';
 
 import { componentLoader, Components } from './component-loader.js';
-import { processAttributes } from 'src/utils/helper.js';
 
 const options: AdminJSOptions = {
   componentLoader,
   rootPath: '/admin',
+  dashboard: {
+    component: Components.Dashboard,
+    handler: dashboardHandler,
+  },
+
   resources: [
     // User related resources
     {

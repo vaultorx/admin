@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint \"src\"",
-    "start": "dotenv -c '.env' -- node dist/app",
+    "start": "dotenv -c '.env' -- npx tsx watch src/app.ts",
+    "start:node": "dotenv -c '.env' -- node dist/app",
     "dev": "npm run build && dotenv -c '.env' -- node --watch dist/app",
     "dev:tsx": "dotenv -c '.env' -- npx tsx watch src/app.ts",
     "dev:ts-node": "dotenv -c '.env' -- ts-node-esm --watch src app.ts"
@@ -36,6 +37,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.1.0",
     "tslib": "^2.5.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.0.4"
   },
   "name": "vaultorx-admin"

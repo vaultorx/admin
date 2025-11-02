@@ -1,11 +1,11 @@
+/* eslint-disable import/order */
+/* eslint-disable object-curly-newline */
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable react/button-has-type */
 import React, { useEffect, useState } from 'react';
-import { ApiClient, useTranslation } from 'adminjs';
-import {
-  Box, H2, H5, Illustration, Text, Loader,
-} from '@adminjs/design-system';
-import { DashboardData } from 'src/types/dashboard.js';
+import { ApiClient } from 'adminjs';
+import { Box, H2, H5, Illustration, Text, Loader } from '@adminjs/design-system';
+import { DashboardData } from '../../types/dashboard.js';
 
 interface QuickLinkCardProps {
   title: string;
@@ -26,9 +26,7 @@ interface ActionItemProps {
 }
 
 // Helper Components
-const StatCard = ({
-  title, value, icon, color,
-}: StatCardProps) => (
+const StatCard = ({ title, value, icon, color }: StatCardProps) => (
   <Box
     style={{
       flex: '1',
@@ -119,7 +117,6 @@ const QuickLinkCard = ({ title, href }: QuickLinkCardProps) => (
 );
 
 const Dashboard = () => {
-  const { translateMessage } = useTranslation();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

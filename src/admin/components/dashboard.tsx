@@ -128,7 +128,7 @@ const Dashboard = () => {
         setLoading(true);
         setError(null);
         const response = await api.getDashboard();
-        setData(response.data);
+        setData(response.data as any);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Failed to load dashboard data');
@@ -152,7 +152,7 @@ const Dashboard = () => {
   if (error) {
     return (
       <Box variant="grey" style={{ padding: '40px', textAlign: 'center' }}>
-        <Illustration variant="error" />
+        <Illustration variant="NotFound" />
         <H5 mt="lg">Error Loading Dashboard</H5>
         <Text>{error}</Text>
         <Box mt="lg">
@@ -268,7 +268,7 @@ const Dashboard = () => {
             </Box>
           ) : (
             <Box textAlign="center" py="xl">
-              <Illustration variant="NoItems" />
+              <Illustration variant="NotFound" />
               <Text opacity={0.5} mt="md">
                 No recent transactions
               </Text>

@@ -2,10 +2,15 @@
 import express from 'express';
 import AdminJS from 'adminjs';
 import { buildAuthenticatedRouter } from '@adminjs/express';
+import dotenv from 'dotenv';
 
 import provider from './admin/auth-provider.js';
 import options from './admin/options.js';
 import initializeDb from './db/index.js';
+
+dotenv.config({
+  path: `${process.cwd()}/.env`,
+});
 
 const port = process.env.PORT || 3000;
 

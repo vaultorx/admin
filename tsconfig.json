@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "jsx": "react",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "declaration": false,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -10,13 +10,17 @@
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "target": "ESNext",
-    "sourceMap": false,
     "outDir": "./dist",
     "baseUrl": ".",
     "incremental": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "strict": false,
+    "rootDir": "./src",
+    "sourceMap": true,
+    "lib": ["es2022", "dom"],
+    "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

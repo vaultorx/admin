@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "yarn install && tsc",
     "lint": "eslint \"src\"",
     "start": "dotenv -c '.env' -- npx tsx watch src/app.ts",
     "start:node": "dotenv -c '.env' -- node dist/app",
@@ -43,7 +43,7 @@
     "typescript": "^5.9.3"
   },
   "engines": {
-    "node": ">=22.16.0"
+    "node": "v22.14.0"
   },
   "name": "vaultorx-admin"
 }

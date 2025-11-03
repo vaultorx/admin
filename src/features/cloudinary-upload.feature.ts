@@ -47,12 +47,10 @@ const cloudinaryUploadFeature = (options: CloudinaryUploadOptions): FeatureType 
     },
     actions: {
       new: {
-        before: async (request: ActionRequest) =>
-          await handleFileUpload(request, properties.key, validation, uploadPath),
+        before: async (request: ActionRequest) => await handleFileUpload(request, properties.key, validation, uploadPath),
       },
       edit: {
-        before: async (request: ActionRequest) =>
-          await handleFileUpload(request, properties.key, validation, uploadPath),
+        before: async (request: ActionRequest) => await handleFileUpload(request, properties.key, validation, uploadPath),
       },
     },
   });
@@ -62,7 +60,7 @@ async function handleFileUpload(
   request: ActionRequest,
   propertyKey: string,
   validation?: CloudinaryUploadOptions['validation'],
-  uploadPath?: CloudinaryUploadOptions['uploadPath']
+  uploadPath?: CloudinaryUploadOptions['uploadPath'],
 ): Promise<ActionRequest> {
   const { payload, method } = request;
 

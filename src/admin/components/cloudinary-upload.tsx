@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { FormGroup, Label, FormMessage, Box, Icon } from '@adminjs/design-system';
+import {
+  FormGroup, Label, FormMessage, Box, Icon,
+} from '@adminjs/design-system';
 import { BasePropertyProps } from 'adminjs';
 
 // Component name matches the registration key
@@ -40,7 +42,7 @@ const CloudinaryUpload = (props: BasePropertyProps) => {
             name: file.name,
             size: file.size,
             type: file.type,
-          })
+          }),
         );
 
         setUploading(false);
@@ -55,11 +57,10 @@ const CloudinaryUpload = (props: BasePropertyProps) => {
   const currentValue = params?.[property.name];
 
   // Check if current value is an image
-  const isImage =
-    currentValue &&
-    (currentValue.includes('/image/') ||
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(currentValue) ||
-      currentValue.startsWith('data:image/'));
+  const isImage = currentValue
+    && (currentValue.includes('/image/')
+      || /\.(jpg|jpeg|png|gif|webp)$/i.test(currentValue)
+      || currentValue.startsWith('data:image/'));
 
   const isVideo = currentValue && (currentValue.includes('/video/') || /\.(mp4|mov|avi|webm)$/i.test(currentValue));
 

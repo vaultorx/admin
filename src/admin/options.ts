@@ -1,10 +1,10 @@
 import { AdminJSOptions } from 'adminjs';
-import { processAttributes } from './utils/helper.js';
-import { dashboardHandler } from './utils/dashboard-handler.js';
 
 import cloudinaryUploadFeature from '../features/cloudinary-upload.feature.js';
 import { db } from '../db/index.js';
 
+import { processAttributes } from './utils/helper.js';
+import { dashboardHandler } from './utils/dashboard-handler.js';
 import { componentLoader, Components } from './component-loader.js';
 
 const options: AdminJSOptions = {

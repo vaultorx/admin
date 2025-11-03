@@ -148,7 +148,7 @@ export class CloudinaryStorage {
    * @param quality Quality (1-100)
    * @returns Transformed URL
    */
-  static getOptimizedUrl(url: string, width?: number, height?: number, quality: number = 80): string {
+  static getOptimizedUrl(url: string, width?: number, height?: number, quality = 80): string {
     const transformations: string[] = [];
 
     if (width) transformations.push(`w_${width}`);

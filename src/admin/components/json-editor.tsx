@@ -1,6 +1,8 @@
 /* eslint-disable react/jsx-filename-extension */
 import React from 'react';
-import { FormGroup, Label, Input, FormMessage, Box } from '@adminjs/design-system';
+import {
+  FormGroup, Label, Input, FormMessage, Box,
+} from '@adminjs/design-system';
 import { BasePropertyProps } from 'adminjs';
 
 const JsonEditor = (props: BasePropertyProps) => {

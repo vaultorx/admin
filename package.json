@@ -6,9 +6,9 @@
     "build": "yarn clean && tsc",
     "lint": "eslint \"src\"",
     "start": "npx dotenv-cli -c '.env' -- node dist/app.js",
-    "dev": "dotenv-cli -c '.env' -- tsx watch src/app.ts",
+    "dev": "npx dotenv-cli -c '.env' -- tsx watch src/app.ts",
     "dev:node": "npm run build && dotenv-cli -c '.env' -- node --watch dist/app.js",
-    "clean": "rimraf dist"
+    "clean": "npx rimraf dist"
   },
   "dependencies": {
     "@adminjs/express": "^6.1.0",

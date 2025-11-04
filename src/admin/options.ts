@@ -363,7 +363,7 @@ const options: AdminJSOptions = {
     },
     // User related resources
     {
-      resource: table('users'),
+      resource: table('profiles'),
       options: {
         listProperties: ['id', 'email', 'username', 'role', 'kycStatus', 'walletBalance', 'createdAt'],
         filterProperties: ['email', 'username', 'role', 'kycStatus', 'emailVerified'],
@@ -390,7 +390,6 @@ const options: AdminJSOptions = {
       },
     },
   ],
-  databases: [db],
   branding: {
     companyName: 'Vaultorx NFT Marketplace Admin',
     logo: false,

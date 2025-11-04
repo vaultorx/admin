@@ -6,7 +6,7 @@ export const dashboardHandler = async () => {
     const knex = (dbName: string) => db.table(dbName).knex(dbName);
 
     // Fetch total users
-    const users = await knex('users').select();
+    const users = await knex('profiles').select();
     const totalUsers = users.length;
     const pendingKYC = users.filter((u) => u.kycStatus === 'pending').length;
 

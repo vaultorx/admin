@@ -1,3 +1,4 @@
+/* eslint-disable brace-style */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
 import { AdminJSOptions } from 'adminjs';
@@ -17,6 +18,22 @@ function generateUUID() {
 const table = (tableName: string) => db.table(tableName);
 
 // Helper function to update user balance
+// async function updateUserBalance(userId: string, amount: number, operation: 'add' | 'subtract') {
+//   const user = await db.table('profiles').knex('profiles').where({ id: userId }).first();
+//   if (!user) throw new Error('User not found');
+
+//   const currentBalance = parseFloat(user.walletBalance) || 0;
+//   const newBalance = operation === 'add' ? currentBalance + amount : currentBalance - amount;
+
+//   if (newBalance < 0) {
+//     throw new Error('Insufficient balance');
+//   }
+
+//   await db.table('profiles').knex('profiles').where({ id: userId }).update({ walletBalance: newBalance });
+
+//   return newBalance;
+// }
+// Helper function to update user balance
 async function updateUserBalance(userId: string, amount: number, operation: 'add' | 'subtract') {
   const user = await db.table('profiles').knex('profiles').where({ id: userId }).first();
   if (!user) throw new Error('User not found');
@@ -31,6 +48,105 @@ async function updateUserBalance(userId: string, amount: number, operation: 'add
   await db.table('profiles').knex('profiles').where({ id: userId }).update({ walletBalance: newBalance });
 
   return newBalance;
+}
+
+// Helper function to create transaction record
+async function createTransactionRecord(data: {
+  transactionHash?: string;
+  nftItemId?: string;
+  fromUserId: string;
+  toUserId: string;
+  transactionType: string;
+  price: number;
+  currency: string;
+  status: string;
+  gasFee?: number;
+  platformFee?: number;
+  royaltyFee?: number;
+  nftName?: string;
+  from?: string;
+  to?: string;
+}) {
+  return db
+    .table('transactions')
+    .knex('transactions')
+    .insert({
+      id: generateUUID(),
+      ...data,
+      createdAt: new Date(),
+      confirmedAt: data.status === 'completed' ? new Date() : null,
+    });
+}
+
+// Helper function to update transaction status - FIXED
+async function updateTransactionStatus(transactionHash: string, status: string) {
+  const updateData: any = {
+    status,
+  };
+
+  if (status === 'completed') {
+    updateData.confirmedAt = new Date();
+  }
+
+  return db.table('transactions').knex('transactions').where({ transactionHash }).update(updateData);
+}
+
+// Helper function to process deposit approval
+async function processDepositApproval(depositId: string, amount: number, userId: string, transactionHash: string) {
+  // Update user balance
+  await updateUserBalance(userId, amount, 'add');
+
+  // Update transaction status
+  await updateTransactionStatus(transactionHash, 'completed');
+
+  // Update deposit timestamps
+  await db.table('deposit_requests').knex('deposit_requests').where({ id: depositId }).update({
+    processedAt: new Date(),
+    approvedAt: new Date(),
+  });
+}
+
+// Helper function to process withdrawal approval - FIXED
+async function processWithdrawalApproval(withdrawalId: string, userId: string) {
+  const withdrawal = await db
+    .table('withdrawal_requests')
+    .knex('withdrawal_requests')
+    .where({ id: withdrawalId })
+    .first();
+
+  if (!withdrawal) {
+    throw new Error('Withdrawal request not found');
+  }
+
+  const totalAmount = parseFloat(withdrawal.amount) || 0;
+  const withdrawalFee = parseFloat(withdrawal.withdrawalFee) || 0;
+  const totalDeduction = totalAmount + withdrawalFee;
+
+  if (totalDeduction > 0) {
+    // Update user balance
+    await updateUserBalance(userId, totalDeduction, 'subtract');
+
+    // Update withdrawal timestamp
+    await db.table('withdrawal_requests').knex('withdrawal_requests').where({ id: withdrawalId }).update({
+      completedAt: new Date(),
+    });
+
+    // Create transaction record for withdrawal
+    await createTransactionRecord({
+      fromUserId: userId,
+      toUserId: userId,
+      transactionType: 'withdrawal',
+      price: totalAmount,
+      currency: withdrawal.currency || 'WETH',
+      status: 'completed',
+      platformFee: withdrawalFee,
+      nftName: withdrawal.nftItemId ? 'NFT Withdrawal' : 'Funds Withdrawal',
+      from: 'User Wallet',
+      to: 'External Address',
+    });
+  }
+
+  return totalDeduction;
 }
 
 const options: AdminJSOptions = {
@@ -453,8 +569,17 @@ const options: AdminJSOptions = {
     {
       resource: table('withdrawal_requests'),
       options: {
-        listProperties: ['id', 'userId', 'status', 'destinationAddress', 'createdAt'],
+        listProperties: ['id', 'userId', 'amount', 'status', 'destinationAddress', 'createdAt'],
         properties: {
+          amount: {
+            type: 'number',
+            isVisible: {
+              list: true,
+              show: true,
+              edit: true,
+              filter: true,
+            },
+          },
           status: {
             availableValues: [
               { label: 'Pending', value: 'pending' },
@@ -468,7 +593,6 @@ const options: AdminJSOptions = {
         actions: {
           new: {
             before: async (request) => {
-              // Generate UUID for new records
               if (request.method === 'post') {
                 request.payload = {
                   ...request.payload,
@@ -491,7 +615,10 @@ const options: AdminJSOptions = {
                 .first();
 
               // Store old status for comparison
-              request.context = { oldStatus: oldRecord?.status };
+              request.context = {
+                oldStatus: oldRecord?.status,
+                oldRecord,
+              };
               return request;
             },
             after: async (response: any, request: any) => {
@@ -509,40 +636,38 @@ const options: AdminJSOptions = {
                     .first();
 
                   if (withdrawal && withdrawal.userId) {
-                    // Get NFT item if exists
-                    let amount = 0;
-                    if (withdrawal.nftItemId) {
-                      const nft = await db
-                        .table('nft_items')
-                        .knex('nft_items')
-                        .where({ id: withdrawal.nftItemId })
-                        .first();
-                      amount = nft?.listPrice || 0;
-                    }
+                    const amountDeducted = await processWithdrawalApproval(recordId, withdrawal.userId);
 
-                    // Subtract withdrawal fee if exists
-                    const withdrawalFee = parseFloat(withdrawal.withdrawalFee) || 0;
-                    const totalDeduction = amount + withdrawalFee;
-
-                    if (totalDeduction > 0) {
-                      await updateUserBalance(withdrawal.userId, totalDeduction, 'subtract');
-
-                      // Update completedAt timestamp
-                      await db
-                        .table('withdrawal_requests')
-                        .knex('withdrawal_requests')
-                        .where({ id: recordId })
-                        .update({ completedAt: new Date() });
-
-                      response.notice = {
-                        message: `Withdrawal completed. User balance deducted by ${totalDeduction}`,
-                        type: 'success',
-                      };
-                    }
+                    response.notice = {
+                      message: `Withdrawal completed successfully. User balance deducted by ${amountDeducted}`,
+                      type: 'success',
+                    };
                   }
                 } catch (error: any) {
                   response.notice = {
-                    message: `Error updating balance: ${error.message}`,
+                    message: `Error processing withdrawal: ${error.message}`,
+                    type: 'error',
+                  };
+
+                  // Revert status change if error occurred
+                  await db
+                    .table('withdrawal_requests')
+                    .knex('withdrawal_requests')
+                    .where({ id: recordId })
+                    .update({ status: oldStatus });
+                }
+              }
+
+              // Handle status change to 'verified' (optional intermediate step)
+              else if (newStatus === 'verified' && oldStatus !== 'verified' && recordId) {
+                try {
+                  response.notice = {
+                    message: 'Withdrawal request verified and ready for processing',
+                    type: 'success',
+                  };
+                } catch (error: any) {
+                  response.notice = {
+                    message: `Error verifying withdrawal: ${error.message}`,
                     type: 'error',
                   };
                 }
@@ -557,7 +682,7 @@ const options: AdminJSOptions = {
     {
       resource: table('deposit_requests'),
       options: {
-        listProperties: ['id', 'userId', 'amount', 'status', 'createdAt'],
+        listProperties: ['id', 'userId', 'amount', 'currency', 'status', 'transactionHash', 'createdAt'],
         properties: {
           status: {
             availableValues: [
@@ -571,12 +696,31 @@ const options: AdminJSOptions = {
         actions: {
           new: {
             before: async (request) => {
-              // Generate UUID for new records
               if (request.method === 'post') {
                 request.payload = {
                   ...request.payload,
                   id: generateUUID(),
                 };
+
+                // Automatically create a transaction record for new deposits
+                if (request.payload.transactionHash && request.payload.userId && request.payload.amount) {
+                  try {
+                    await createTransactionRecord({
+                      transactionHash: request.payload.transactionHash,
+                      fromUserId: request.payload.userId,
+                      toUserId: request.payload.userId,
+                      transactionType: 'deposit',
+                      price: parseFloat(request.payload.amount),
+                      currency: request.payload.currency || 'WETH',
+                      status: 'pending',
+                      nftName: `${request.payload.amount} ${request.payload.currency || 'WETH'} Deposit`,
+                      from: 'External Source',
+                      to: 'Platform Wallet',
+                    });
+                  } catch (error) {
+                    console.error('Error creating transaction record:', error);
+                  }
+                }
               }
               return request;
             },
@@ -592,7 +736,10 @@ const options: AdminJSOptions = {
                 .where({ id: recordId })
                 .first();
 
-              request.context = { oldStatus: oldRecord?.status };
+              request.context = {
+                oldStatus: oldRecord?.status,
+                oldRecord,
+              };
               return request;
             },
             after: async (response, request) => {
@@ -609,31 +756,73 @@ const options: AdminJSOptions = {
                     .where({ id: recordId })
                     .first();
 
-                  if (deposit && deposit.userId) {
+                  if (deposit && deposit.userId && deposit.transactionHash) {
                     const amount = parseFloat(deposit.amount) || 0;
 
                     if (amount > 0) {
-                      await updateUserBalance(deposit.userId, amount, 'add');
-
-                      // Update timestamps
-                      await db
-                        .table('deposit_requests')
-                        .knex('deposit_requests')
-                        .where({ id: recordId })
-                        .update({
-                          processedAt: new Date(),
-                          approvedAt: deposit.approvedAt || new Date(),
-                        });
+                      await processDepositApproval(recordId, amount, deposit.userId, deposit.transactionHash);
 
                       response.notice = {
-                        message: `Deposit completed. User balance credited with ${amount}`,
+                        message: `Deposit completed successfully. User balance credited with ${amount} ${deposit.currency || 'WETH'}`,
                         type: 'success',
                       };
                     }
                   }
                 } catch (error: any) {
                   response.notice = {
-                    message: `Error updating balance: ${error.message}`,
+                    message: `Error processing deposit: ${error.message}`,
+                    type: 'error',
+                  };
+
+                  // Revert status change if error occurred
+                  await db
+                    .table('deposit_requests')
+                    .knex('deposit_requests')
+                    .where({ id: recordId })
+                    .update({ status: oldStatus });
+                }
+              }
+
+              // Handle status change to 'approved' (optional intermediate step)
+              else if (newStatus === 'approved' && oldStatus !== 'approved' && recordId) {
+                try {
+                  await db.table('deposit_requests').knex('deposit_requests').where({ id: recordId }).update({
+                    approvedAt: new Date(),
+                  });
+
+                  response.notice = {
+                    message: 'Deposit request approved and ready for processing',
+                    type: 'success',
+                  };
+                } catch (error: any) {
+                  response.notice = {
+                    message: `Error approving deposit: ${error.message}`,
+                    type: 'error',
+                  };
+                }
+              }
+
+              // Handle status change to 'rejected'
+              else if (newStatus === 'rejected' && oldStatus !== 'rejected' && recordId) {
+                try {
+                  const deposit = await db
+                    .table('deposit_requests')
+                    .knex('deposit_requests')
+                    .where({ id: recordId })
+                    .first();
+
+                  if (deposit?.transactionHash) {
+                    // Update transaction status to failed
+                    await updateTransactionStatus(deposit.transactionHash, 'failed');
+                  }
+
+                  response.notice = {
+                    message: 'Deposit request rejected',
+                    type: 'success',
+                  };
+                } catch (error: any) {
+                  response.notice = {
+                    message: `Error rejecting deposit: ${error.message}`,
                     type: 'error',
                   };
                 }

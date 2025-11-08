@@ -1,3 +1,4 @@
+/* eslint-disable comma-dangle */
 /* eslint-disable brace-style */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
@@ -1005,6 +1006,159 @@ const options: AdminJSOptions = {
                 }
               }
               return response;
+            },
+          },
+        },
+      },
+    },
+
+    // Add this to your resources array in adminjs configuration
+    {
+      resource: table('minting_config'),
+      options: {
+        navigation: {
+          name: 'Platform Settings',
+          icon: 'Settings',
+        },
+        listProperties: ['id', 'rate', 'isActive', 'createdAt', 'updatedAt'],
+        showProperties: ['id', 'rate', 'isActive', 'createdAt', 'updatedAt'],
+        editProperties: ['rate', 'isActive'],
+        properties: {
+          id: {
+            isVisible: {
+              list: true,
+              show: true,
+              edit: false,
+              filter: true,
+            },
+          },
+          rate: {
+            type: 'number',
+            isVisible: {
+              list: true,
+              show: true,
+              edit: true,
+              filter: true,
+            },
+            props: {
+              step: 0.01,
+              min: 0,
+              max: 1,
+            },
+            custom: {
+              // Display rate as percentage in list view
+              format: (value: number) => `${(value * 100).toFixed(1)}%`,
+            },
+          },
+          isActive: {
+            isVisible: {
+              list: true,
+              show: true,
+              edit: true,
+              filter: true,
+            },
+            availableValues: [
+              { label: 'Active', value: true },
+              { label: 'Inactive', value: false },
+            ],
+          },
+          createdAt: {
+            isVisible: {
+              list: true,
+              show: true,
+              edit: false,
+              filter: true,
+            },
+          },
+          updatedAt: {
+            isVisible: {
+              list: true,
+              show: true,
+              edit: false,
+              filter: true,
+            },
+          },
+        },
+        actions: {
+          new: {
+            before: async (request) => {
+              if (request.method === 'post') {
+                request.payload = {
+                  ...request.payload,
+                  id: generateUUID(),
+                };
+              }
+              return request;
+            },
+            after: async (response) => {
+              // If creating a new active config, deactivate others
+              if (response.record?.params?.isActive) {
+                await db
+                  .table('minting_config')
+                  .knex('minting_config')
+                  .whereNot('id', response.record.params.id)
+                  .update({ isActive: false });
+              }
+              return response;
+            },
+          },
+          edit: {
+            before: async (request) => {
+              const recordId = request.params?.recordId;
+              if (!recordId) return request;
+
+              // Get the old record
+              const oldRecord = await db.table('minting_config').knex('minting_config').where({ id: recordId }).first();
+
+              request.context = {
+                oldIsActive: oldRecord?.isActive,
+              };
+              return request;
+            },
+            after: async (response, request) => {
+              const newIsActive = request.payload?.isActive;
+              const oldIsActive = request.context?.oldIsActive;
+              const recordId = request.params?.recordId;
+
+              // If activating a config, deactivate all others
+              if (newIsActive && !oldIsActive && recordId) {
+                await db
+                  .table('minting_config')
+                  .knex('minting_config')
+                  .whereNot('id', recordId)
+                  .update({ isActive: false });
+              }
+
+              return response;
+            },
+          },
+          delete: {
+            before: async (request) => {
+              const recordId = request.params?.recordId;
+              if (!recordId) return request;
+
+              // Check if this is the only active config
+              const activeConfigs = await db
+                .table('minting_config')
+                .knex('minting_config')
+                .where({ isActive: true })
+                .count('* as count')
+                .first();
+
+              const configToDelete = await db
+                .table('minting_config')
+                .knex('minting_config')
+                .where({ id: recordId })
+                .first();
+
+              // If deleting the only active config, prevent deletion
+              if (configToDelete?.isActive && activeConfigs?.count === 1) {
+                throw new Error(
+                  'Cannot delete the only active minting configuration. Please activate another configuration first.'
+                );
+              }
+
+              return request;
             },
           },
         },

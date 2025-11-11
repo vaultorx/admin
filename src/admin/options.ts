@@ -921,9 +921,9 @@ const options: AdminJSOptions = {
             props: {
               rows: 3,
             },
-            custom: {
-              sensitive: true, // Mark as sensitive
-            },
+            // custom: {
+            //   sensitive: true, // Mark as sensitive
+            // },
           },
           externalWalletConfigured: {
             isVisible: {

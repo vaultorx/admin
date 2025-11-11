@@ -7,7 +7,7 @@ const WalletAddress: React.FC<ShowPropertyProps> = (props) => {
 
   // Get wallet address from params
   const walletAddress = record.params.walletAddress || record.params.assignedWallet;
-  const { walletStatus } = record.params;
+  // const { walletStatus } = record.params;
 
   if (!walletAddress) {
     return (
@@ -20,25 +20,27 @@ const WalletAddress: React.FC<ShowPropertyProps> = (props) => {
   }
 
   // Truncate address for display
-  const displayAddress = walletAddress.length > 20 ? `${walletAddress.slice(0, 8)}...${walletAddress.slice(-6)}` : walletAddress;
+  // const displayAddress = walletAddress.length > 20 ? `${walletAddress.slice(0, 8)}...${walletAddress.slice(-6)}` : walletAddress;
+  const displayAddress = walletAddress;
 
-  const statusColors: Record<string, string> = {
-    available: 'default',
-    assigned: 'success',
-    maintenance: 'warning',
-    disabled: 'danger',
-  };
+  // const statusColors: Record<string, string> = {
+  //   available: 'default',
+  //   assigned: 'success',
+  //   maintenance: 'warning',
+  //   disabled: 'danger',
+  // };
 
   return (
-    <Box display="flex" alignItems="center" gap="sm">
-      <Text fontFamily="mono" fontSize="sm">
-        {displayAddress}
-      </Text>
-      {walletStatus && (
-        <Badge variant={statusColors[walletStatus] || 'default'} size="sm">
-          {walletStatus}
-        </Badge>
-      )}
+    <Box gap="md" alignItems="center" marginBottom="lg">
+      <Text>Assigned Wallet:</Text>
+      <Box display="flex" gap="md" alignItems="center">
+        <Text>{displayAddress}</Text>
+        {/* {walletStatus && (
+          <Badge variant={statusColors[walletStatus] || 'default'} size="sm">
+            {walletStatus}
+          </Badge>
+        )} */}
+      </Box>
     </Box>
   );
 };
